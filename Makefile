@@ -1,27 +1,70 @@
-include macros.mk
+# ==============================
+# Macros
+# ==============================
+CC       = gcc
+CFLAGS   = -Wall -fPIC -Iinclude
+OBJDIR   = obj
+BINDIR   = bin
+LIBDIR   = lib
+SRCDIR   = src
+MANDIR   = man/man1
 
-TARGET     = bin/client_static
-LIB        = lib/libmyutils.a
-OBJECTS    = obj/mystrfunctions.o obj/myfilefunctions.o
-MAINOBJ    = obj/main.o
+TARGET_STATIC  = $(BINDIR)/client_static
+TARGET_DYNAMIC = $(BINDIR)/client_dynamic
+STATIC_LIB     = $(LIBDIR)/libmyutils.a
+DYNAMIC_LIB    = $(LIBDIR)/libmyutils.so
 
-.PHONY: all clean
+OBJS = $(OBJDIR)/main.o $(OBJDIR)/mystrfunctions.o $(OBJDIR)/myfilefunctions.o
 
-all: $(TARGET)
+.PHONY: all static dynamic clean install
 
-# Link the final program with static library
-$(TARGET): $(MAINOBJ) $(LIB)
-	$(CC) $(CFLAGS) -o $@ $(MAINOBJ) -Llib -lmyutils
+# ==============================
+# Default: build both
+# ==============================
+all: static dynamic
 
-# Build static library
-$(LIB): $(OBJECTS)
-	ar rcs $@ $(OBJECTS)
-	ranlib $@
+# ==============================
+# Build static executable
+# ==============================
+static: $(TARGET_STATIC)
 
+$(TARGET_STATIC): $(OBJS)
+	@mkdir -p $(LIBDIR) $(BINDIR)
+	ar rcs $(STATIC_LIB) $(OBJDIR)/mystrfunctions.o $(OBJDIR)/myfilefunctions.o
+	ranlib $(STATIC_LIB)
+	$(CC) $(CFLAGS) $(OBJDIR)/main.o $(OBJDIR)/mystrfunctions.o $(OBJDIR)/myfilefunctions.o \
+		-o $@ -L$(LIBDIR) -lmyutils
+
+# ==============================
+# Build dynamic executable
+# ==============================
+dynamic: $(TARGET_DYNAMIC)
+
+$(TARGET_DYNAMIC): $(OBJS)
+	@mkdir -p $(LIBDIR) $(BINDIR)
+	$(CC) -shared -o $(DYNAMIC_LIB) $(OBJDIR)/mystrfunctions.o $(OBJDIR)/myfilefunctions.o
+	$(CC) $(CFLAGS) $(OBJDIR)/main.o $(OBJDIR)/mystrfunctions.o $(OBJDIR)/myfilefunctions.o \
+		-o $@ -L$(LIBDIR) -lmyutils
+
+# ==============================
 # Compile object files
-obj/%.o: src/%.c
-	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+# ==============================
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	@mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
+# ==============================
+# Install target
+# ==============================
+install: all
+	@echo "Installing client and man page..."
+	sudo cp $(BINDIR)/client_dynamic /usr/local/bin/client
+	sudo cp $(MANDIR)/client.1 /usr/local/share/man/man1/
+	sudo mandb
+
+# ==============================
+# Cleanup
+# ==============================
 clean:
-	rm -f obj/*.o $(TARGET) $(LIB)
+	rm -f $(OBJDIR)/*.o $(BINDIR)/* $(LIBDIR)/*
 
