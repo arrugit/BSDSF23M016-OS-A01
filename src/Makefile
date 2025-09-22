@@ -3,24 +3,38 @@ include ../macros.mk
 # Object files
 OBJS = $(OBJDIR)/main.o $(OBJDIR)/mystrfunctions.o $(OBJDIR)/myfilefunctions.o
 
-# Default target
-all: $(TARGET)
+# ----------------------
+# Build Static Executable
+# ----------------------
+static: $(LIBDIR)/libmyutils.a $(OBJS)
+	$(CC) $(OBJS) -o $(STATIC_TARGET) -L$(LIBDIR) -lmyutils
 
-# Link objects into final executable
-$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $@
+$(LIBDIR)/libmyutils.a: $(OBJDIR)/mystrfunctions.o $(OBJDIR)/myfilefunctions.o
+	mkdir -p $(LIBDIR)
+	ar rcs $@ $^
+	ranlib $@
 
-# Compile rules
-$(OBJDIR)/main.o: main.c
+# ----------------------
+# Build Dynamic Executable
+# ----------------------
+dynamic: $(LIBDIR)/libmyutils.so $(OBJS)
+	$(CC) $(OBJS) -o $(DYNAMIC_TARGET) -L$(LIBDIR) -lmyutils
+
+$(LIBDIR)/libmyutils.so: $(OBJDIR)/mystrfunctions.o $(OBJDIR)/myfilefunctions.o
+	mkdir -p $(LIBDIR)
+	$(CC) -shared -o $@ $^
+
+# ----------------------
+# Compilation Rules
+# ----------------------
+$(OBJDIR)/%.o: %.c
+	mkdir -p $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/mystrfunctions.o: mystrfunctions.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR)/myfilefunctions.o: myfilefunctions.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# Cleanup
+# ----------------------
+# Clean
+# ----------------------
 clean:
-	rm -f $(OBJDIR)/*.o $(TARGET)
+	rm -f $(OBJDIR)/*.o $(STATIC_TARGET) $(DYNAMIC_TARGET) \
+	      $(LIBDIR)/libmyutils.a $(LIBDIR)/libmyutils.so
 

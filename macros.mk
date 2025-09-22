@@ -1,13 +1,14 @@
 # Compiler and Flags
-CC = gcc
-CFLAGS = -Wall -I../include
+CC      = gcc
+CFLAGS  = -Wall -fPIC -Iinclude
 
 # Directories
-OBJDIR = ../obj
-BINDIR = ../bin
-LIBDIR = ../lib
-INCLUDEDIR = ../include
+OBJDIR  = obj
+BINDIR  = bin
+LIBDIR  = lib
+INCLUDEDIR = include
 
-# Executable name
-TARGET = $(BINDIR)/client
+# Executable names
+STATIC_TARGET  = $(BINDIR)/client_static
+DYNAMIC_TARGET = $(BINDIR)/client_dynamic
 
